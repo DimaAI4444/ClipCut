@@ -1,3 +1,20 @@
+import logging
+import shutil
+from pathlib import Path
+from telegram import Bot
+
+logger = logging.getLogger(__name__)
+
+ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv"}
+
+
+def get_job_dir(job_id: str) -> Path:
+    from config import TMP_DIR
+    d = TMP_DIR / job_id
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 async def download_video(bot: Bot, file_id: str, job_id: str) -> Path:
     job_dir = get_job_dir(job_id)
     dest = job_dir / "source.mp4"
@@ -7,9 +24,6 @@ async def download_video(bot: Bot, file_id: str, job_id: str) -> Path:
 
     logger.info("file_path from API: %s", file_path)
 
-    # Локальный Bot API возвращает URL вида:
-    # http://localhost:8081/file/bot<token>//var/lib/telegram-bot-api/<token>/videos/file.mp4
-    # Извлекаем путь внутри контейнера и маппим на хост
     if "/var/lib/telegram-bot-api/" in file_path:
         inner = "/var/lib/telegram-bot-api/" + file_path.split("/var/lib/telegram-bot-api/")[1]
         host_path = Path(inner.replace("/var/lib/telegram-bot-api", "/opt/telegram-bot-api"))
