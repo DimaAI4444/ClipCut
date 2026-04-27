@@ -69,12 +69,18 @@ async def _call_openrouter(system: str, user: str) -> str:
         base_url="https://openrouter.ai/api/v1",
     )
     response = await c.chat.completions.create(
-        model="anthropic/claude-sonnet-4-5",
+        model="meta-llama/llama-3.3-70b-instruct",
         temperature=0.1,
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
+        extra_body={
+            "provider": {
+                "order": ["Groq"],
+                "allow_fallbacks": False,
+            }
+        },
     )
     return response.choices[0].message.content
 
