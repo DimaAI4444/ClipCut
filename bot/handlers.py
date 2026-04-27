@@ -330,13 +330,17 @@ async def _poll_job_status(app, user_id: int, job_id: str, progress_msg_id: int)
             except Exception:
                 pass
             try:
-                await app.bot.send_document(
-                    chat_id=user_id,
-                    document=result_path.open("rb"),
-                    filename=result_path.name,
-                    caption=caption,
-                    reply_markup=kb_after_result(revisions_left),
-                )
+                with open(result_path, "rb") as f:
+                    await app.bot.send_document(
+                        chat_id=user_id,
+                        document=f,
+                        filename=result_path.name,
+                        caption=caption,
+                        reply_markup=kb_after_result(revisions_left),
+                        read_timeout=300,
+                        write_timeout=300,
+                        connect_timeout=30,
+                    )
             except Exception as e:
                 logger.error("Failed to send result for job %s: %s", job_id, e)
                 await app.bot.send_message(
