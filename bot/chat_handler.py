@@ -73,10 +73,16 @@ async def _call_chat_llm(user_message: str, history: list[dict]) -> str:
     messages.append({"role": "user", "content": user_message})
 
     response = await client.chat.completions.create(
-        model="anthropic/claude-sonnet-4-5",
+        model="meta-llama/llama-3.3-70b-instruct",
         messages=messages,
         max_tokens=512,
         temperature=0.7,
+        extra_body={
+            "provider": {
+                "order": ["Groq"],
+                "allow_fallbacks": False,
+            }
+        },
     )
     return response.choices[0].message.content.strip()
 
