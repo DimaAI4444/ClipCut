@@ -276,6 +276,7 @@ async def _poll_job_status(app, user_id: int, job_id: str, progress_msg_id: int)
         "cutting":      "⏳ Шаг 3/3 — Нарезаю видео...",
     }
 
+    edit_errors = 0
     while True:
         await asyncio.sleep(STATUS_POLL_INTERVAL)
         job = await get_job(job_id)
@@ -291,8 +292,12 @@ async def _poll_job_status(app, user_id: int, job_id: str, progress_msg_id: int)
                     text=stage_texts[progress],
                     reply_markup=kb_cancel(),
                 )
+                edit_errors = 0
             except Exception:
-                pass
+                edit_errors += 1
+                if edit_errors > 5:
+                    logger.warning("Too many edit errors for job %s, stopping progress updates", job_id)
+                    progress_msg_id = None
 
         if job["status"] == "done":
             result_path = Path(job["result_path"])
@@ -494,7 +499,17 @@ async def standalone_chat_voice(update: Update, context: ContextTypes.DEFAULT_TY
 # ---------------------------------------------------------------------------
 
 def build_app(token: str) -> Application:
-    app = Application.builder().token(token).build()
+    app = (
+        Application.builder()
+        .token(token)
+        .base_url("http://localhost:8081/bot")
+        .base_file_url("http://localhost:8081/file/bot")
+        .get_updates_read_timeout(30)
+        .read_timeout(300)
+        .write_timeout(300)
+        .connect_timeout(30)
+        .build()
+    )
 
     conv = ConversationHandler(
         entry_points=[
